@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GoodWe Solar</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: transparent;
+  --surface: #fcfcfb;
+  --surface-2: #f0efec;
+  --border: #dddcd6;
+  --text: #0b0b0b;
+  --text-2: #52514e;
+  --muted: #8a8984;
+  --grid: #e6e5e0;
+  --accent: #2a78d6;
+  --s1: #2a78d6; /* consumo */
+  --s2: #eb6834; /* solar */
+  --s3: #1baf7a; /* red / importación */
+  --s4: #eda100; /* batería / exportación */
+  --good: #0ca30c;
+  --critical: #d03b3b;
+  --warning: #fab219;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface: #1a1a19; --surface-2: #262624; --border: #3a3a37;
+    --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e86; --grid: #31312e;
+    --accent: #3987e5; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #1a1a19; --surface-2: #262624; --border: #3a3a37;
+  --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e86; --grid: #31312e;
+  --accent: #3987e5; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+}
+:root[data-bg="solid"] { --bg: var(--surface); }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding: 8px;
+}
+header { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-bottom: 8px; }
+h1 { font-size: 14px; margin: 0; font-weight: 600; }
+.status { color: var(--text-2); font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.dot.ok { background: var(--good); }
+.dot.bad { background: var(--critical); }
+.spacer { flex: 1; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.seg button {
+  border: 0; background: transparent; color: var(--text-2); padding: 3px 9px; font: inherit; cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+select, input, .btn {
+  font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 3px 6px;
+}
+.btn { cursor: pointer; text-decoration: none; display: inline-block; }
+.btn:hover { border-color: var(--accent); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; }
+.tile .label { color: var(--text-2); font-size: 11px; display: flex; align-items: center; gap: 5px; }
+.tile .value { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tile .value small { font-size: 12px; font-weight: 400; color: var(--text-2); }
+.tile .sub { color: var(--muted); font-size: 11px; }
+.swatch { width: 10px; height: 3px; border-radius: 2px; display: inline-block; }
+h2 { font-size: 12px; font-weight: 600; color: var(--text-2); margin: 10px 0 4px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 4px 8px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--grid); }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--text-2); font-weight: 500; font-size: 11px; position: sticky; top: 0; background: var(--surface); }
+tr:last-child td { border-bottom: 0; }
+.today th, .today td { text-align: center; }
+.chart { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 6px 2px; }
+.chart + .chart { margin-top: 6px; }
+.chart-title { font-size: 11px; color: var(--text-2); margin: 0 0 2px 4px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; color: var(--text-2); margin: 0 0 2px 4px; }
+.legend span { display: inline-flex; align-items: center; gap: 4px; }
+svg { display: block; width: 100%; overflow: visible; }
+svg text { fill: var(--muted); font-size: 10px; }
+.tip {
+  position: absolute; pointer-events: none; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 8px; font-size: 11px; white-space: nowrap; display: none; z-index: 2;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.15);
+}
+.tip b { display: block; margin-bottom: 2px; }
+.tip div { display: flex; align-items: center; gap: 5px; }
+.empty { color: var(--muted); padding: 24px; text-align: center; }
+footer { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+details { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 5px 9px; flex: 1 1 280px; }
+summary { cursor: pointer; color: var(--text-2); font-weight: 500; }
+.form-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.form-row label { color: var(--text-2); font-size: 12px; display: inline-flex; gap: 4px; align-items: center; }
+.alert-on { color: var(--critical); font-weight: 600; }
+.note { color: var(--muted); font-size: 11px; margin-top: 4px; }
+.compact footer { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>☀️ GoodWe</h1>
+  <span class="status"><span id="dot" class="dot"></span><span id="updated">cargando…</span></span>
+  <span class="spacer"></span>
+  <span class="seg" role="group" aria-label="Datos">
+    <button data-view="live">Actual</button><button data-view="daily">Diario</button>
+  </span>
+  <span class="seg" role="group" aria-label="Presentación">
+    <button data-mode="table">Tabla</button><button data-mode="chart">Gráfico</button>
+  </span>
+  <select id="range" aria-label="Rango"></select>
+</header>
+<main id="content"><div class="empty">Cargando…</div></main>
+<footer>
+  <details id="export">
+    <summary>Exportar CSV</summary>
+    <form class="form-row" id="csv-form" action="export.csv" method="get">
+      <label>Tipo <select name="type">
+        <option value="raw">Lecturas</option><option value="daily">Resumen diario</option><option value="events">Eventos/alertas</option>
+      </select></label>
+      <label>Desde <input type="date" name="from" required></label>
+      <label>Hasta <input type="date" name="to" required></label>
+      <label>Formato <select name="format">
+        <option value="excel">Excel (; y coma decimal)</option><option value="std">Estándar (, y punto)</option>
+      </select></label>
+      <button class="btn" type="submit">Descargar</button>
+    </form>
+  </details>
+  <details id="alerts">
+    <summary>Alertas <span id="alert-summary"></span></summary>
+    <div id="alert-state" class="note"></div>
+    <div class="form-row">
+      <button class="btn" id="test-push" type="button">Enviar notificación de prueba</button>
+      <button class="btn" id="test-hk" type="button">Probar sensor HomeKit</button>
+    </div>
+    <div id="test-result" class="note"></div>
+  </details>
+</footer>
+<script>
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const params = new URLSearchParams(location.search);
+const store = {
+  get(k) { try { return localStorage.getItem('goodwe.' + k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem('goodwe.' + k, v); } catch { /* storage unavailable */ } },
+};
+if (params.get('theme')) document.documentElement.dataset.theme = params.get('theme');
+if (params.get('bg')) document.documentElement.dataset.bg = params.get('bg');
+if (params.get('compact') === '1') document.body.classList.add('compact');
+
+const RANGES = {
+  live: [['6', '6 h'], ['24', '24 h'], ['48', '48 h'], ['168', '7 días']],
+  daily: [['7', '7 días'], ['14', '14 días'], ['31', '31 días'], ['90', '90 días'], ['365', '1 año']],
+};
+const state = {
+  view: params.get('view') || store.get('view') || 'live',
+  mode: params.get('mode') || store.get('mode') || 'table',
+  range: {
+    live: params.get('hours') || store.get('range.live') || '24',
+    daily: params.get('days') || store.get('range.daily') || '14',
+  },
+  status: null,
+};
+
+const fmt = (v, d = 0) => v === null || v === undefined || Number.isNaN(v) ? '–'
+  : Number(v).toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
+const pad = (n) => String(n).padStart(2, '0');
+const isoDay = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const hhmm = (ts) => { const d = new Date(ts * 1000); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const shortDay = (key) => { const [, m, d] = key.split('-'); return `${Number(d)}/${Number(m)}`; };
+const color = (v) => `var(--${v})`;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+async function api(path) {
+  const r = await fetch(path, { cache: 'no-store' });
+  if (!r.ok) throw new Error(`${path}: HTTP ${r.status}`);
+  return r.json();
+}
+
+// ---------- controls ----------
+function syncControls() {
+  document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.view === state.view));
+  document.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.mode === state.mode));
+  const sel = $('#range');
+  const showRange = !(state.view === 'live' && state.mode === 'table');
+  sel.style.display = showRange ? '' : 'none';
+  sel.innerHTML = RANGES[state.view].map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  sel.value = state.range[state.view];
+}
+document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => {
+  state.view = b.dataset.view; store.set('view', state.view); syncControls(); render();
+}));
+document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => {
+  state.mode = b.dataset.mode; store.set('mode', state.mode); syncControls(); render();
+}));
+$('#range').addEventListener('change', (e) => {
+  state.range[state.view] = e.target.value; store.set('range.' + state.view, e.target.value); render();
+});
+
+// ---------- status / live tiles ----------
+function tile(label, value, unit, sub, swatch) {
+  return `<div class="tile"><div class="label">${swatch ? `<span class="swatch" style="background:${color(swatch)}"></span>` : ''}${label}</div>
+    <div class="value">${value}${unit ? ` <small>${unit}</small>` : ''}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
+}
+
+function renderLiveTable(s) {
+  const c = s.current;
+  if (!c) return '<div class="empty">Aún no hay lecturas del inversor.</div>';
+  const grid = c.pgrid < 0 ? ['Importando', -c.pgrid] : c.pgrid > 0 ? ['Exportando', c.pgrid] : ['Sin flujo', 0];
+  const bat = c.pbattery < 0 ? `Cargando ${fmt(-c.pbattery)} W` : c.pbattery > 0 ? `Descargando ${fmt(c.pbattery)} W` : c.batteryModeLabel;
+  const t = s.today || {};
+  const a = s.alerts || {};
+  let html = '<div class="tiles">' +
+    tile('Solar', fmt(c.ppv), 'W', `Hoy ${fmt(t.pv_kwh, 1)} kWh`, 's2') +
+    tile('Consumo casa', fmt(c.houseConsumption), 'W', `Hoy ${fmt(t.load_kwh, 1)} kWh`, 's1') +
+    tile('Red', fmt(grid[1]), 'W', grid[0], 's3') +
+    tile('Batería', fmt(c.batterySoc), '%', bat, 's4') +
+    tile('Temp. inversor', fmt(c.temperature, 1), '°C', a.overTempInverter ? '<span class="alert-on">⚠ sobre el límite</span>' : `Máx. hoy ${fmt(t.max_temp_inverter, 1)} °C`) +
+    tile('Temp. batería', fmt(c.batteryTemperature, 1), '°C', a.overTempBattery ? '<span class="alert-on">⚠ sobre el límite</span>' : `SOH ${fmt(c.batterySoh)} %`) +
+    tile('Red eléctrica', fmt(c.vgrid, 1), 'V', a.gridDown ? '<span class="alert-on">⚠ Corte de luz</span>' : `${fmt(c.fgrid, 2)} Hz · ${esc(c.workModeLabel)}`) +
+    '</div>';
+  html += `<h2>Acumulado hoy</h2><div class="table-wrap"><table class="today"><thead><tr>
+    <th>Solar</th><th>Consumo</th><th>Importado</th><th>Exportado</th><th>Carga bat.</th><th>Descarga bat.</th><th>SOC mín–máx</th><th>Pico solar</th></tr></thead>
+    <tbody><tr><td>${fmt(t.pv_kwh, 2)} kWh</td><td>${fmt(t.load_kwh, 2)} kWh</td><td>${fmt(t.import_kwh, 2)} kWh</td>
+    <td>${fmt(t.export_kwh, 2)} kWh</td><td>${fmt(t.charge_kwh, 2)} kWh</td><td>${fmt(t.discharge_kwh, 2)} kWh</td>
+    <td>${fmt(t.min_soc)}–${fmt(t.max_soc)} %</td><td>${fmt(t.max_pv_w)} W</td></tr></tbody></table></div>`;
+  return html;
+}
+
+function renderStatus(s) {
+  state.status = s;
+  const ok = s.current && !s.faulted;
+  $('#dot').className = 'dot ' + (ok ? 'ok' : 'bad');
+  $('#updated').textContent = s.updatedAt
+    ? (s.faulted ? 'Sin respuesta del inversor · última ' : 'Actualizado ') + new Date(s.updatedAt * 1000).toLocaleTimeString('es-CL')
+    : 'sin datos';
+  const a = s.alerts || {};
+  const parts = [];
+  parts.push(`Corte de luz: ${a.outageEnabled ? (a.gridDown ? '<span class="alert-on">CORTE en curso</span>' : 'vigilando') : 'desactivada'}`);
+  parts.push(`Temperatura: ${a.temperatureEnabled ? (a.overTempInverter || a.overTempBattery ? '<span class="alert-on">sobre el límite</span>' : 'vigilando') : 'desactivada'}`);
+  parts.push(`Canales push: ${a.channels && a.channels.length ? a.channels.join(', ') : 'ninguno configurado'}`);
+  $('#alert-state').innerHTML = parts.join(' · ');
+  $('#alert-summary').innerHTML = a.gridDown || a.overTempInverter || a.overTempBattery ? '<span class="alert-on">⚠</span>' : '';
+}
+
+// ---------- charts ----------
+function niceScale(min, max, ticks = 4) {
+  if (min === max) { max = min + 1; }
+  const span = max - min;
+  const step0 = span / ticks;
+  const mag = 10 ** Math.floor(Math.log10(step0));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= step0);
+  const lo = Math.floor(min / step) * step;
+  const hi = Math.ceil(max / step) * step;
+  const out = [];
+  for (let v = lo; v <= hi + step / 2; v += step) out.push(Math.round(v * 1e6) / 1e6);
+  return { lo, hi, ticks: out };
+}
+
+function chartBox(title, series) {
+  const box = document.createElement('div');
+  box.className = 'chart';
+  box.innerHTML = (title ? `<div class="chart-title">${title}</div>` : '') +
+    (series.length > 1 ? `<div class="legend">${series.map((s) => `<span><span class="swatch" style="background:${color(s.color)}"></span>${s.label}</span>`).join('')}</div>` : '') +
+    '<div class="tip"></div>';
+  return box;
+}
+
+function placeTip(box, tip, x, html) {
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  const w = tip.offsetWidth;
+  const left = x + 12 + w > box.clientWidth ? x - 12 - w : x + 12;
+  tip.style.left = Math.max(0, left) + 'px';
+  tip.style.top = '28px';
+}
+
+// Multi-series line chart over time; one y-axis, crosshair tooltip.
+function lineChart(container, { title, rows, series, unit, step = 60, height = 180, yMin, yMax, digits = 0 }) {
+  const box = chartBox(title, series);
+  container.appendChild(box);
+  const W = Math.max(280, box.clientWidth - 12);
+  const H = height;
+  const m = { l: 44, r: 8, t: 6, b: 18 };
+  const xs = rows.map((r) => r.t);
+  const vals = rows.flatMap((r) => series.map((s) => r[s.key])).filter((v) => v !== null);
+  const sc = niceScale(yMin ?? Math.min(0, ...vals), yMax ?? Math.max(...vals, 1));
+  const x0 = xs[0], x1 = xs[xs.length - 1] || x0 + 1;
+  const X = (t) => m.l + ((t - x0) / (x1 - x0 || 1)) * (W - m.l - m.r);
+  const Y = (v) => m.t + (1 - (v - sc.lo) / (sc.hi - sc.lo)) * (H - m.t - m.b);
+  // Break the line where samples are missing (plugin stopped, inverter offline).
+  const gap = step * 3;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${title || ''}">`;
+  for (const v of sc.ticks) {
+    svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)" ${v === 0 ? 'stroke-width="1.5"' : ''}/>`;
+    svg += `<text x="${m.l - 5}" y="${Y(v) + 3}" text-anchor="end">${fmt(v)}${unit === '%' ? '%' : ''}</text>`;
+  }
+  const spanH = (x1 - x0) / 3600;
+  const nT = Math.max(2, Math.floor((W - m.l) / 70));
+  for (let i = 0; i <= nT; i++) {
+    const t = x0 + (i / nT) * (x1 - x0);
+    const d = new Date(t * 1000);
+    const lbl = spanH > 48 ? `${d.getDate()}/${d.getMonth() + 1} ${pad(d.getHours())}h` : hhmm(t);
+    svg += `<text x="${X(t)}" y="${H - 4}" text-anchor="${i === 0 ? 'start' : i === nT ? 'end' : 'middle'}">${lbl}</text>`;
+  }
+  for (const s of series) {
+    let d = '';
+    let prev;
+    for (const r of rows) {
+      const v = r[s.key];
+      if (v === null) { prev = undefined; continue; }
+      d += (prev === undefined || r.t - prev > gap ? 'M' : 'L') + X(r.t).toFixed(1) + ',' + Y(v).toFixed(1);
+      prev = r.t;
+    }
+    svg += `<path d="${d}" fill="none" stroke="${color(s.color)}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  svg += `<line class="xh" y1="${m.t}" y2="${H - m.b}" stroke="var(--muted)" stroke-dasharray="3 3" visibility="hidden"/>`;
+  svg += `<rect x="${m.l}" y="0" width="${W - m.l - m.r}" height="${H}" fill="transparent"/></svg>`;
+  box.insertAdjacentHTML('beforeend', svg);
+  const el = box.querySelector('svg');
+  const xh = el.querySelector('.xh');
+  const tip = box.querySelector('.tip');
+  el.addEventListener('pointermove', (e) => {
+    const rect = el.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (W / rect.width);
+    const t = x0 + ((px - m.l) / (W - m.l - m.r)) * (x1 - x0);
+    let best = 0;
+    for (let i = 1; i < rows.length; i++) if (Math.abs(rows[i].t - t) < Math.abs(rows[best].t - t)) best = i;
+    const r = rows[best];
+    xh.setAttribute('x1', X(r.t)); xh.setAttribute('x2', X(r.t)); xh.setAttribute('visibility', 'visible');
+    const d = new Date(r.t * 1000);
+    placeTip(box, tip, (X(r.t) / W) * rect.width,
+      `<b>${d.toLocaleDateString('es-CL')} ${hhmm(r.t)}</b>` +
+      series.map((s) => `<div><span class="swatch" style="background:${color(s.color)}"></span>${s.label}: ${fmt(r[s.key], digits)} ${unit}${s.hint ? ' ' + s.hint(r[s.key]) : ''}</div>`).join(''));
+  });
+  el.addEventListener('pointerleave', () => { xh.setAttribute('visibility', 'hidden'); tip.style.display = 'none'; });
+}
+
+// Grouped bar chart per day.
+function barChart(container, { title, rows, series, unit, height = 220 }) {
+  const box = chartBox(title, series);
+  container.appendChild(box);
+  const W = Math.max(280, box.clientWidth - 12);
+  const H = height;
+  const m = { l: 40, r: 6, t: 6, b: 18 };
+  const vals = rows.flatMap((r) => series.map((s) => r[s.key] || 0));
+  const sc = niceScale(0, Math.max(...vals, 1));
+  const Y = (v) => m.t + (1 - (v - sc.lo) / (sc.hi - sc.lo)) * (H - m.t - m.b);
+  const band = (W - m.l - m.r) / rows.length;
+  const inner = band * 0.8;
+  const bw = Math.max(1, (inner - (series.length - 1) * 2) / series.length);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${title || ''}">`;
+  for (const v of sc.ticks) {
+    svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/>`;
+    svg += `<text x="${m.l - 5}" y="${Y(v) + 3}" text-anchor="end">${fmt(v)}</text>`;
+  }
+  const every = Math.ceil(rows.length / Math.max(1, Math.floor((W - m.l) / 40)));
+  rows.forEach((r, i) => {
+    const bx = m.l + i * band + (band - inner) / 2;
+    series.forEach((s, j) => {
+      const v = r[s.key] || 0;
+      const x = bx + j * (bw + 2);
+      const y = Y(v);
+      const h = Math.max(0, Y(0) - y);
+      const rad = Math.min(4, bw / 2, h);
+      // Rounded top, square base.
+      svg += h > 0 ? `<path d="M${x},${Y(0)} V${y + rad} Q${x},${y} ${x + rad},${y} H${x + bw - rad} Q${x + bw},${y} ${x + bw},${y + rad} V${Y(0)} Z" fill="${color(s.color)}"/>` : '';
+    });
+    if (i % every === 0) svg += `<text x="${m.l + i * band + band / 2}" y="${H - 4}" text-anchor="middle">${shortDay(r.day)}</text>`;
+    svg += `<rect data-i="${i}" x="${m.l + i * band}" y="0" width="${band}" height="${H - m.b}" fill="transparent"/>`;
+  });
+  svg += '</svg>';
+  box.insertAdjacentHTML('beforeend', svg);
+  const el = box.querySelector('svg');
+  const tip = box.querySelector('.tip');
+  el.addEventListener('pointermove', (e) => {
+    const i = e.target.dataset && e.target.dataset.i;
+    if (i === undefined) return;
+    const r = rows[i];
+    const rect = el.getBoundingClientRect();
+    placeTip(box, tip, ((m.l + (Number(i) + 0.5) * band) / W) * rect.width,
+      `<b>${r.day}</b>` + series.map((s) => `<div><span class="swatch" style="background:${color(s.color)}"></span>${s.label}: ${fmt(r[s.key], 2)} ${unit}</div>`).join(''));
+  });
+  el.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
+}
+
+// ---------- views ----------
+async function renderLiveChart(main) {
+  const data = await api(`api/readings?hours=${state.range.live}&points=${Math.min(1000, Math.round(innerWidth))}`);
+  if (!data.rows.length) { main.innerHTML = '<div class="empty">Aún no hay lecturas guardadas en este rango.</div>'; return; }
+  main.innerHTML = '';
+  const signed = (pos, neg) => (v) => v > 0 ? `(${pos})` : v < 0 ? `(${neg})` : '';
+  lineChart(main, {
+    title: 'Potencia (W)', rows: data.rows, unit: 'W', step: data.step,
+    height: Math.max(150, Math.min(260, innerHeight - 200)),
+    series: [
+      { key: 'ppv', label: 'Solar', color: 's2' },
+      { key: 'house', label: 'Consumo casa', color: 's1' },
+      { key: 'pgrid', label: 'Red (+ exporta / − importa)', color: 's3', hint: signed('exporta', 'importa') },
+      { key: 'pbattery', label: 'Batería (+ descarga / − carga)', color: 's4', hint: signed('descarga', 'carga') },
+    ],
+  });
+  lineChart(main, {
+    title: 'Carga de batería (%)', rows: data.rows, unit: '%', step: data.step, height: 90, yMin: 0, yMax: 100, digits: 1,
+    series: [{ key: 'soc', label: 'SOC', color: 's4' }],
+  });
+}
+
+async function renderDaily(main, asChart) {
+  const data = await api(`api/daily?days=${state.range.daily}`);
+  if (!data.rows.length) { main.innerHTML = '<div class="empty">Aún no hay resúmenes diarios.</div>'; return; }
+  if (asChart) {
+    main.innerHTML = '';
+    barChart(main, {
+      title: 'Energía por día (kWh)', rows: data.rows, unit: 'kWh',
+      height: Math.max(150, Math.min(280, innerHeight - 120)),
+      series: [
+        { key: 'pv_kwh', label: 'Solar', color: 's2' },
+        { key: 'load_kwh', label: 'Consumo', color: 's1' },
+        { key: 'import_kwh', label: 'Importación', color: 's3' },
+        { key: 'export_kwh', label: 'Exportación', color: 's4' },
+      ],
+    });
+    return;
+  }
+  const rows = [...data.rows].reverse();
+  const outage = (s) => (s ? `${Math.round(s / 60)} min` : '–');
+  main.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Día</th><th>Solar kWh</th><th>Consumo kWh</th>
+    <th>Importado kWh</th><th>Exportado kWh</th><th>Carga kWh</th><th>Descarga kWh</th><th>SOC mín–máx</th>
+    <th>T° máx inv.</th><th>T° máx bat.</th><th>Pico solar W</th><th>Corte</th></tr></thead><tbody>` +
+    rows.map((r) => `<tr><td>${r.day}</td><td>${fmt(r.pv_kwh, 1)}</td><td>${fmt(r.load_kwh, 1)}</td><td>${fmt(r.import_kwh, 2)}</td>
+      <td>${fmt(r.export_kwh, 2)}</td><td>${fmt(r.charge_kwh, 2)}</td><td>${fmt(r.discharge_kwh, 2)}</td>
+      <td>${fmt(r.min_soc)}–${fmt(r.max_soc)} %</td><td>${fmt(r.max_temp_inverter, 1)}</td><td>${fmt(r.max_temp_battery, 1)}</td>
+      <td>${fmt(r.max_pv_w)}</td><td>${outage(r.outage_s)}</td></tr>`).join('') + '</tbody></table></div>';
+}
+
+let renderSeq = 0;
+async function render() {
+  const seq = ++renderSeq;
+  const main = document.createElement('main');
+  main.id = 'content';
+  try {
+    if (state.view === 'live' && state.mode === 'table') {
+      main.innerHTML = state.status ? renderLiveTable(state.status) : '<div class="empty">Cargando…</div>';
+      $('#content').replaceWith(main);
+      return;
+    }
+    // Charts measure their container, so mount before drawing.
+    $('#content').replaceWith(main);
+    if (state.view === 'live') await renderLiveChart(main);
+    else await renderDaily(main, state.mode === 'chart');
+  } catch (err) {
+    if (seq === renderSeq) main.innerHTML = `<div class="empty">Error: ${esc(err.message)}</div>`;
+  }
+}
+
+async function refreshStatus() {
+  try {
+    renderStatus(await api('api/status'));
+    if (state.view === 'live' && state.mode === 'table') render();
+  } catch (err) {
+    $('#dot').className = 'dot bad';
+    $('#updated').textContent = 'Sin conexión con el plugin';
+  }
+}
+
+// ---------- footer actions ----------
+const today = isoDay(new Date());
+$('#csv-form [name=from]').value = isoDay(new Date(Date.now() - 6 * 86400000));
+$('#csv-form [name=to]').value = today;
+
+async function postAction(path, label) {
+  const out = $('#test-result');
+  out.textContent = `${label}…`;
+  try {
+    const r = await fetch(path, { method: 'POST' });
+    const body = await r.json();
+    if (body.results) {
+      out.textContent = body.results.length
+        ? body.results.map((x) => `${x.channel}: ${x.ok ? 'enviado ✓' : 'error – ' + x.error}`).join(' · ')
+        : 'No hay canales push activos. Configúralos en los ajustes del plugin.';
+    } else {
+      out.textContent = body.message || JSON.stringify(body);
+    }
+  } catch (err) {
+    out.textContent = 'Error: ' + err.message;
+  }
+}
+$('#test-push').addEventListener('click', () => postAction('api/test-alert', 'Enviando'));
+$('#test-hk').addEventListener('click', () => postAction('api/test-homekit', 'Activando sensor'));
+
+syncControls();
+refreshStatus().then(render);
+setInterval(refreshStatus, 10000);
+setInterval(() => { if (!(state.view === 'live' && state.mode === 'table')) render(); }, 60000);
+let resizeTimer;
+addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(render, 200); });
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+{
+  "name": "homebridge-goodwe-es",
+  "displayName": "GoodWe ES (local)",
+  "version": "1.2.1",
+  "description": "Local UDP reader for GoodWe ES/EM hybrid inverters (AA55 protocol, port 8899) with SQLite history, dashboard, CSV export and alerts. No cloud, no dependencies.",
+  "main": "index.js",
+  "license": "MIT",
+  "author": "mrdcl",
+  "homepage": "https://github.com/mrdcl/homebridge-goodwe-es#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mrdcl/homebridge-goodwe-es.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mrdcl/homebridge-goodwe-es/issues"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "homebridge",
+    "goodwe",
+    "inverter",
+    "solar",
+    "battery",
+    "energy",
+    "homekit",
+    "sqlite"
+  ],
+  "files": [
+    "index.js",
+    "goodwe.js",
+    "storage.js",
+    "alerts.js",
+    "web.js",
+    "web/",
+    "homebridge-ui/",
+    "config.schema.json",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.13",
+    "homebridge": "^1.6.0 || ^2.0.0"
+  }
+}

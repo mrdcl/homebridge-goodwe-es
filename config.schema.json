@@ -1,0 +1,124 @@
+{
+  "pluginAlias": "GoodWeES",
+  "pluginType": "platform",
+  "singular": true,
+  "customUi": true,
+  "headerDisplay": "Lectura local del inversor GoodWe ES por UDP, historial en SQLite, panel web, exportación CSV y alertas. Sin nube y sin dependencias.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": { "title": "Name", "type": "string", "default": "GoodWe" },
+      "host": { "title": "Inverter IP", "type": "string", "required": true, "format": "ipv4", "placeholder": "192.168.1.50" },
+      "port": { "title": "UDP port", "type": "integer", "default": 8899 },
+      "pollInterval": { "title": "Poll interval (s)", "type": "integer", "default": 10, "minimum": 5 },
+      "timeout": { "title": "Request timeout (ms)", "type": "integer", "default": 2000 },
+      "retries": { "title": "Retries per poll", "type": "integer", "default": 2 },
+      "showTotal": { "title": "Show lifetime generation (MWh)", "type": "boolean", "default": false },
+      "history": {
+        "title": "Historial (base de datos SQLite)",
+        "type": "object",
+        "properties": {
+          "enabled": { "title": "Guardar historial", "type": "boolean", "default": true },
+          "dbPath": {
+            "title": "Archivo de base de datos",
+            "type": "string",
+            "placeholder": "<storagePath>/goodwe-es-data/goodwe.db",
+            "description": "Vacío = goodwe-es-data/goodwe.db dentro del directorio de Homebridge. Archivo propio, separado del almacenamiento de Homebridge."
+          },
+          "rawInterval": {
+            "title": "Guardar una lectura cada (s)",
+            "type": "integer", "default": 60, "minimum": 10,
+            "description": "HomeKit sigue actualizándose con el intervalo de lectura; esto solo afecta lo que se guarda."
+          },
+          "rawRetentionDays": {
+            "title": "Conservar lecturas (días)",
+            "type": "integer", "default": 180, "minimum": 0,
+            "description": "0 = para siempre. Los resúmenes diarios se conservan siempre."
+          }
+        }
+      },
+      "web": {
+        "title": "Panel web",
+        "type": "object",
+        "properties": {
+          "enabled": { "title": "Activar panel web", "type": "boolean", "default": true },
+          "port": { "title": "Puerto", "type": "integer", "default": 8582, "minimum": 1024, "maximum": 65535 },
+          "bind": { "title": "Escuchar en (IP)", "type": "string", "default": "0.0.0.0" },
+          "allowPublic": {
+            "title": "Permitir IPs públicas",
+            "type": "boolean", "default": false,
+            "description": "Por defecto solo responde a la red local y Tailscale."
+          }
+        }
+      },
+      "alerts": {
+        "title": "Alertas",
+        "type": "object",
+        "properties": {
+          "homekit": {
+            "title": "Sensores HomeKit de alerta",
+            "type": "boolean", "default": true,
+            "description": "Crea sensores de contacto «Red eléctrica» y «Sobretemperatura inversor» (cerrado = normal, abierto = alerta) para recibir avisos de la app Casa."
+          },
+          "notifyRecovery": { "title": "Avisar también cuando se normaliza", "type": "boolean", "default": true },
+          "outage": {
+            "title": "Corte de luz",
+            "type": "object",
+            "properties": {
+              "enabled": { "title": "Activar", "type": "boolean", "default": false },
+              "voltageThreshold": { "title": "Voltaje de red mínimo (V)", "type": "integer", "default": 100, "description": "Por debajo de esto (o si el inversor pasa a modo off-grid) se considera corte." },
+              "debounceSeconds": { "title": "Confirmar corte tras (s)", "type": "integer", "default": 30, "minimum": 0 },
+              "restoreSeconds": { "title": "Confirmar regreso tras (s)", "type": "integer", "default": 60, "minimum": 0 }
+            }
+          },
+          "temperature": {
+            "title": "Temperatura alta",
+            "type": "object",
+            "properties": {
+              "enabled": { "title": "Activar", "type": "boolean", "default": false },
+              "inverterMax": { "title": "Límite inversor (°C)", "type": "number", "default": 60, "description": "0 = no vigilar" },
+              "batteryMax": { "title": "Límite batería (°C)", "type": "number", "default": 45, "description": "0 = no vigilar" },
+              "hysteresis": { "title": "Histéresis (°C)", "type": "number", "default": 3, "minimum": 0, "description": "La alerta se apaga al bajar este margen por debajo del límite." },
+              "cooldownMinutes": { "title": "No repetir antes de (min)", "type": "integer", "default": 30, "minimum": 0 }
+            }
+          }
+        }
+      },
+      "notify": {
+        "title": "Canales push",
+        "type": "object",
+        "properties": {
+          "ntfy": {
+            "title": "ntfy",
+            "type": "object",
+            "properties": {
+              "enabled": { "title": "Activar", "type": "boolean", "default": false },
+              "server": { "title": "Servidor", "type": "string", "default": "https://ntfy.sh" },
+              "topic": { "title": "Tema (topic)", "type": "string", "description": "Usa un nombre difícil de adivinar; en ntfy.sh cualquiera que lo conozca puede leerlo." },
+              "token": { "title": "Token de acceso (opcional)", "type": "string" },
+              "priority": { "title": "Prioridad por defecto", "type": "integer", "default": 3, "minimum": 1, "maximum": 5 }
+            }
+          },
+          "telegram": {
+            "title": "Telegram",
+            "type": "object",
+            "properties": {
+              "enabled": { "title": "Activar", "type": "boolean", "default": false },
+              "botToken": { "title": "Token del bot", "type": "string", "description": "Créalo con @BotFather." },
+              "chatId": { "title": "Chat ID", "type": "string" }
+            }
+          },
+          "webhook": {
+            "title": "Webhook (n8n u otro)",
+            "type": "object",
+            "properties": {
+              "enabled": { "title": "Activar", "type": "boolean", "default": false },
+              "url": { "title": "URL", "type": "string", "description": "Recibe un POST JSON con event, title, message, priority, tags y time." },
+              "authHeader": { "title": "Cabecera Authorization (opcional)", "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

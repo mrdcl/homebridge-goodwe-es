@@ -1,0 +1,73 @@
+<!-- Custom settings page: a status card for the plugin's dashboard, then the normal config form.
+     No server.js: the browser talks to the plugin's own HTTP server directly. -->
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="card-title mb-2">Panel GoodWe</h5>
+    <div id="gw-status" class="mb-2">Conectando con el panel del plugin…</div>
+    <div class="d-flex flex-wrap" style="gap: 6px;">
+      <a id="gw-open" class="btn btn-primary btn-sm" target="_blank" rel="noopener">Abrir panel</a>
+      <a id="gw-csv-raw" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">CSV lecturas (7 días)</a>
+      <a id="gw-csv-daily" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">CSV resumen diario</a>
+      <button id="gw-test" class="btn btn-secondary btn-sm" type="button">Notificación de prueba</button>
+      <button id="gw-test-hk" class="btn btn-secondary btn-sm" type="button">Probar sensor HomeKit</button>
+    </div>
+    <small class="form-text text-muted mt-2">
+      Para incrustar el panel en otro dashboard (cualquier widget <i>iframe</i>) usa la URL <code id="gw-url"></code>.
+      Opciones de URL: <code>?view=live|daily</code>, <code>&amp;mode=table|chart</code>, <code>&amp;compact=1</code>,
+      <code>&amp;theme=dark|light</code>. El panel tiene un formulario para exportar CSV con cualquier rango de fechas.
+      Guarda y reinicia Homebridge tras cambiar el puerto o las alertas.
+    </small>
+  </div>
+</div>
+<script>
+(async () => {
+  const configs = await homebridge.getPluginConfig();
+  const cfg = configs[0] || {};
+  const port = (cfg.web && cfg.web.port) || 8582;
+  const base = `http://${location.hostname}:${port}/`;
+  const pad = (n) => String(n).padStart(2, '0');
+  const day = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const today = day(new Date());
+  const weekAgo = day(new Date(Date.now() - 6 * 86400000));
+  document.getElementById('gw-url').textContent = base + '?compact=1';
+  document.getElementById('gw-open').href = base;
+  document.getElementById('gw-csv-raw').href = `${base}export.csv?type=raw&from=${weekAgo}&to=${today}&format=excel`;
+  document.getElementById('gw-csv-daily').href = `${base}export.csv?type=daily&from=2000-01-01&to=${today}&format=excel`;
+
+  const statusEl = document.getElementById('gw-status');
+  try {
+    const s = await (await fetch(base + 'api/status', { cache: 'no-store' })).json();
+    const c = s.current;
+    const a = s.alerts || {};
+    statusEl.innerHTML = c
+      ? `v${s.version} · Solar <b>${c.ppv} W</b> · Casa <b>${c.houseConsumption} W</b> · Batería <b>${c.batterySoc}%</b>` +
+        ` · Red ${c.vgrid} V${a.gridDown ? ' <b class="text-danger">CORTE</b>' : ''}` +
+        `<br><small class="text-muted">Historial: ${s.history ? 'activo' : 'desactivado'} · Alertas: corte ${a.outageEnabled ? 'sí' : 'no'},` +
+        ` temperatura ${a.temperatureEnabled ? 'sí' : 'no'} · Push: ${(a.channels || []).join(', ') || 'ninguno'}</small>`
+      : 'El plugin aún no tiene lecturas del inversor.';
+  } catch (err) {
+    statusEl.textContent = `No se pudo conectar con ${base} (¿plugin reiniciado con el panel web activo? ¿UI abierta por https?).`;
+  }
+
+  async function post(path) {
+    try {
+      const body = await (await fetch(base + path, { method: 'POST' })).json();
+      if (body.results) {
+        if (!body.results.length) {
+          homebridge.toast.warning('No hay canales push activos.');
+        }
+        body.results.forEach((r) => r.ok
+          ? homebridge.toast.success(`${r.channel}: enviado`)
+          : homebridge.toast.error(`${r.channel}: ${r.error}`));
+      } else {
+        (body.ok ? homebridge.toast.success : homebridge.toast.warning)(body.message);
+      }
+    } catch (err) {
+      homebridge.toast.error(err.message);
+    }
+  }
+  document.getElementById('gw-test').addEventListener('click', () => post('api/test-alert'));
+  document.getElementById('gw-test-hk').addEventListener('click', () => post('api/test-homekit'));
+})();
+homebridge.showSchemaForm();
+</script>
