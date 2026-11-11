@@ -1,7 +1,7 @@
 {
   "name": "homebridge-goodwe-es",
   "displayName": "GoodWe ES (local)",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Local UDP reader for GoodWe ES/EM hybrid inverters (AA55 protocol, port 8899) with SQLite history, dashboard, CSV export and alerts. No cloud, no dependencies.",
   "main": "index.js",
   "license": "MIT",

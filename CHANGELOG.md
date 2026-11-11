@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.0
+- New Pushover push channel (app token + user key, optional device and sound). Grid outages use high priority (1) or emergency (2, repeats until acknowledged, configurable retry/expire); minor notices can be sent silently.
+
 ## 1.2.1
 - Daily house consumption is now integrated from house power (the inverter's own load counter misses loads fed straight from the grid).
 - Clearer log line when raw readings are kept forever.

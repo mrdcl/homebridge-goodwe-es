@@ -1,6 +1,6 @@
 'use strict';
-// Grid-outage and over-temperature alerts, plus push channels (ntfy, Telegram,
-// generic webhook). Uses the global fetch of Node >= 18; no dependencies.
+// Grid-outage and over-temperature alerts, plus push channels (Pushover, ntfy,
+// Telegram, generic webhook). Uses the global fetch of Node >= 18; no dependencies.
 
 const REQUEST_TIMEOUT_MS = 10000;
 
@@ -39,8 +39,11 @@ class Notifier {
   }
 
   channels() {
-    const { ntfy = {}, telegram = {}, webhook = {} } = this.config;
+    const { pushover = {}, ntfy = {}, telegram = {}, webhook = {} } = this.config;
     const list = [];
+    if (pushover.enabled && pushover.token && pushover.user) {
+      list.push(['pushover', (m) => this.sendPushover(pushover, m)]);
+    }
     if (ntfy.enabled && ntfy.topic) {
       list.push(['ntfy', (m) => this.sendNtfy(ntfy, m)]);
     }
@@ -66,6 +69,31 @@ class Notifier {
       }
     }));
     return results;
+  }
+
+  // Pushover priorities: urgent -> configurable (1 = high, bypasses quiet hours;
+  // 2 = emergency, repeats until acknowledged), high -> 0, default -> 0 or -1 (quiet).
+  sendPushover(cfg, msg) {
+    const urgent = [1, 2].includes(Number(cfg.urgentPriority)) ? Number(cfg.urgentPriority) : 1;
+    const priority = msg.priority === 'urgent' ? urgent : msg.priority === 'high' ? 0 : (cfg.quietDefault ? -1 : 0);
+    const body = new URLSearchParams({
+      token: cfg.token,
+      user: cfg.user,
+      title: String(msg.title || '').slice(0, 250),
+      message: String(msg.message || msg.title || '').slice(0, 1024),
+      priority: String(priority),
+    });
+    if (cfg.device) {
+      body.set('device', cfg.device);
+    }
+    if (cfg.sound) {
+      body.set('sound', cfg.sound);
+    }
+    if (priority === 2) {
+      body.set('retry', String(Math.max(30, Number(cfg.retry) || 120)));
+      body.set('expire', String(Math.min(10800, Number(cfg.expire) || 1800)));
+    }
+    return post('https://api.pushover.net/1/messages.json', body);
   }
 
   sendNtfy(cfg, msg) {

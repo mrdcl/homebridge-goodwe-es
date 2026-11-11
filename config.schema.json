@@ -88,6 +88,24 @@
         "title": "Canales push",
         "type": "object",
         "properties": {
+          "pushover": {
+            "title": "Pushover",
+            "type": "object",
+            "properties": {
+              "enabled": { "title": "Activar", "type": "boolean", "default": false },
+              "token": { "title": "API token de la aplicación", "type": "string", "description": "Crea una aplicación en pushover.net/apps/build." },
+              "user": { "title": "User key", "type": "string", "description": "Aparece en tu página principal de pushover.net." },
+              "device": { "title": "Dispositivo (opcional)", "type": "string", "description": "Nombre del dispositivo en Pushover; vacío envía a todos." },
+              "sound": { "title": "Sonido (opcional)", "type": "string", "description": "Por ejemplo: pushover, siren, falling. Vacío usa el de la app." },
+              "urgentPriority": { "title": "Prioridad del corte de luz", "type": "integer", "default": 1, "oneOf": [
+                { "title": "Alta (suena aunque haya horario silencioso)", "enum": [1] },
+                { "title": "Emergencia (se repite hasta confirmarla)", "enum": [2] }
+              ] },
+              "quietDefault": { "title": "Avisos menores sin sonido", "type": "boolean", "default": false },
+              "retry": { "title": "Emergencia: repetir cada (s)", "type": "integer", "default": 120, "minimum": 30 },
+              "expire": { "title": "Emergencia: dejar de repetir tras (s)", "type": "integer", "default": 1800, "maximum": 10800 }
+            }
+          },
           "ntfy": {
             "title": "ntfy",
             "type": "object",
