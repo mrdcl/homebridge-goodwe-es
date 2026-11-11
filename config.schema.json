@@ -20,12 +20,6 @@
         "type": "object",
         "properties": {
           "enabled": { "title": "Guardar historial", "type": "boolean", "default": true },
-          "dbPath": {
-            "title": "Archivo de base de datos",
-            "type": "string",
-            "placeholder": "<storagePath>/goodwe-es-data/goodwe.db",
-            "description": "Vacío = goodwe-es-data/goodwe.db dentro del directorio de Homebridge. Archivo propio, separado del almacenamiento de Homebridge."
-          },
           "rawInterval": {
             "title": "Guardar una lectura cada (s)",
             "type": "integer", "default": 60, "minimum": 10,

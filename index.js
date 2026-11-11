@@ -148,8 +148,12 @@ class GoodWeESPlatform {
     }
     try {
       const { Storage, Recorder } = require('./storage');
-      const file = path.resolve(this.history.dbPath ||
-        path.join(this.api.user.storagePath(), DATA_DIR, 'goodwe.db'));
+      // Always inside the Homebridge storage directory.
+      const file = path.join(this.api.user.storagePath(), DATA_DIR, 'goodwe.db');
+      if (this.history.dbPath && path.resolve(this.api.user.storagePath(), this.history.dbPath) !== file) {
+        this.log.warn(`history.dbPath is no longer supported and is ignored; using ${file}. ` +
+          'Move your existing database there to keep its history.');
+      }
       this.storage = new Storage(file);
       this.recorder = new Recorder(this.storage, this.history, this.log);
       this.log.info(`History: ${file} (raw every ${this.recorder.rawInterval} s, ` +

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.2
+- The history database is now always stored inside the Homebridge storage directory (`goodwe-es-data/goodwe.db`). The `history.dbPath` option was removed; if it is still set, it is ignored with a warning in the log.
+
 ## 1.3.1
 - Homebridge verification fixes: declare the `supports-hap` keyword and use a schema-level `required` array in `config.schema.json`.
 

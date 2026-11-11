@@ -82,7 +82,7 @@ Full example, with every section optional:
 
 **Where the data goes**
 
-- The database is stored at `<Homebridge storage>/goodwe-es-data/goodwe.db` unless you set `history.dbPath`.
+- The database is always stored at `<Homebridge storage>/goodwe-es-data/goodwe.db`. To keep it on another disk, mount or symlink that folder (the old `history.dbPath` option was removed in 1.3.2 and is ignored).
 - Set `rawRetentionDays: 0` to keep raw readings forever.
 
 **Secrets**
@@ -146,7 +146,7 @@ Plugin de Homebridge que lee **localmente** los inversores híbridos **GoodWe ES
   - Potencias en W: solar, consumo de la casa, importación y exportación de red.
   - Batería (SOC) y temperaturas del inversor y la batería.
   - Acumulados del día en kWh: generación, consumo, importación, exportación, carga y descarga de batería.
-- **Historial en SQLite** con intervalo y retención configurables, más un resumen diario que se conserva siempre.
+- **Historial en SQLite** con intervalo y retención configurables, más un resumen diario que se conserva siempre. La base de datos queda siempre en `goodwe-es-data/goodwe.db` dentro del directorio de Homebridge (la opción `dbPath` se eliminó en 1.3.2 y se ignora).
 - **Panel web en la red local** (puerto 8582), con vistas actual y diaria, en tabla o gráfico.
 - **Exportación CSV** por rango de fechas, sin límite de filas.
 - **Alertas**
