@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.1
+- Homebridge verification fixes: declare the `supports-hap` keyword and use a schema-level `required` array in `config.schema.json`.
+
 ## 1.3.0
 - New Pushover push channel (app token + user key, optional device and sound). Grid outages use high priority (1) or emergency (2, repeats until acknowledged, configurable retry/expire); minor notices can be sent silently.
 

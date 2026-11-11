@@ -6,9 +6,10 @@
   "headerDisplay": "Lectura local del inversor GoodWe ES por UDP, historial en SQLite, panel web, exportación CSV y alertas. Sin nube y sin dependencias.",
   "schema": {
     "type": "object",
+    "required": ["host"],
     "properties": {
       "name": { "title": "Name", "type": "string", "default": "GoodWe" },
-      "host": { "title": "Inverter IP", "type": "string", "required": true, "format": "ipv4", "placeholder": "192.168.1.50" },
+      "host": { "title": "Inverter IP", "type": "string", "format": "ipv4", "placeholder": "192.168.1.50" },
       "port": { "title": "UDP port", "type": "integer", "default": 8899 },
       "pollInterval": { "title": "Poll interval (s)", "type": "integer", "default": 10, "minimum": 5 },
       "timeout": { "title": "Request timeout (ms)", "type": "integer", "default": 2000 },
