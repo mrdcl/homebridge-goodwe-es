@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0
+- **The web dashboard is now opt-in** (`web.enabled` defaults to `false`). If you use the dashboard, the CSV export or the test buttons on the settings page, turn it on in *Panel web*. Configs that already set `"enabled": true` are unaffected.
+- `POST` actions (test notification, HomeKit test) only accept requests whose `Origin` is the same local host (the dashboard or the Homebridge UI), so a third-party web page cannot trigger them through your browser.
+- The settings page explains when the dashboard is off instead of failing to connect.
+- Display name is now "GoodWe ES". README: Verified by Homebridge badge and a security section.
+
 ## 1.3.2
 - The history database is now always stored inside the Homebridge storage directory (`goodwe-es-data/goodwe.db`). The `history.dbPath` option was removed; if it is still set, it is ignored with a warning in the log.
 

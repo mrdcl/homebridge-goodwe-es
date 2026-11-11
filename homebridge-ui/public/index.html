@@ -35,6 +35,16 @@
   document.getElementById('gw-csv-daily').href = `${base}export.csv?type=daily&from=2000-01-01&to=${today}&format=excel`;
 
   const statusEl = document.getElementById('gw-status');
+  if (!(cfg.web && cfg.web.enabled)) {
+    statusEl.textContent = 'El panel web está desactivado. Actívalo en «Panel web» (más abajo), guarda y reinicia Homebridge ' +
+      'para ver el estado, exportar CSV y probar las alertas desde aquí.';
+    document.querySelectorAll('#gw-open, #gw-csv-raw, #gw-csv-daily, #gw-test, #gw-test-hk').forEach((el) => {
+      el.classList.add('disabled');
+      el.setAttribute('aria-disabled', 'true');
+      el.style.pointerEvents = 'none';
+    });
+    return;
+  }
   try {
     const s = await (await fetch(base + 'api/status', { cache: 'no-store' })).json();
     const c = s.current;

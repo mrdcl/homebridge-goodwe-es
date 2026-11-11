@@ -1,5 +1,7 @@
 # homebridge-goodwe-es
 
+[![verified-by-homebridge](https://img.shields.io/badge/homebridge-verified-blueviolet?color=%23491F59&style=for-the-badge&logoColor=%23FFFFFF&logo=homebridge)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
+
 Local Homebridge plugin for **GoodWe ES / EM hybrid inverters** (for example GW5048D-ES). It reads the inverter over the LAN with the AA55 UDP protocol on port 8899. No cloud account, no SEMS portal, and no npm dependencies.
 
 *Versión en español más abajo.*
@@ -12,7 +14,7 @@ Local Homebridge plugin for **GoodWe ES / EM hybrid inverters** (for example GW5
 - **History** in a separate SQLite file using Node's built-in `node:sqlite`.
   - Raw readings are stored at a configurable interval, with configurable retention.
   - A daily summary is kept forever.
-- **Web dashboard**, reachable from the LAN or Tailscale only, on port 8582 by default.
+- **Web dashboard** (opt-in: set `web.enabled`), reachable from the LAN or Tailscale only, on port 8582 by default.
   - Live and daily views, each as a table or a chart.
   - The page can be embedded in any dashboard that has an iframe widget.
 - **CSV export** for any date range.
@@ -25,6 +27,7 @@ Local Homebridge plugin for **GoodWe ES / EM hybrid inverters** (for example GW5
 - **Custom settings page** in the Homebridge UI.
   - Shows the plugin status and links to the dashboard and the CSV export.
   - Has buttons to send a test notification and to test the HomeKit alert sensors.
+  - These need the web dashboard to be enabled.
 
 > The configuration UI and the default accessory names are in Spanish. You can rename the accessories in the Home app.
 
@@ -107,6 +110,8 @@ Alert priorities:
 
 ### Dashboard and CSV
 
+The dashboard is **off by default** since 1.4.0. Turn on *Panel web → Activar panel web* (`"web": { "enabled": true }`) and restart Homebridge.
+
 Open `http://<homebridge-ip>:8582/`. The page accepts these URL options:
 
 | Option | Values |
@@ -120,7 +125,11 @@ Example: `http://<homebridge-ip>:8582/?view=daily&mode=chart&compact=1`.
 
 CSV export URL: `http://<homebridge-ip>:8582/export.csv?type=raw|daily|events&from=YYYY-MM-DD&to=YYYY-MM-DD&format=excel|std`.
 
-By default the server only answers private addresses: RFC 1918 ranges, loopback and Tailscale's 100.64.0.0/10. Do not expose it to the internet.
+**Security**
+
+- By default the server only answers private addresses: RFC 1918 ranges, loopback and Tailscale's 100.64.0.0/10. Do not expose it to the internet.
+- There is no login, so anyone on your network can read the data. Set `web.bind` to `127.0.0.1` to listen only on the Homebridge host.
+- The test actions (`POST /api/test-alert`, `POST /api/test-homekit`) are only accepted from pages served by the same host (the dashboard or the Homebridge UI) under a local name or IP. A web page you visit elsewhere cannot trigger them through your browser.
 
 ### Outage detection
 
@@ -147,7 +156,7 @@ Plugin de Homebridge que lee **localmente** los inversores híbridos **GoodWe ES
   - Batería (SOC) y temperaturas del inversor y la batería.
   - Acumulados del día en kWh: generación, consumo, importación, exportación, carga y descarga de batería.
 - **Historial en SQLite** con intervalo y retención configurables, más un resumen diario que se conserva siempre. La base de datos queda siempre en `goodwe-es-data/goodwe.db` dentro del directorio de Homebridge (la opción `dbPath` se eliminó en 1.3.2 y se ignora).
-- **Panel web en la red local** (puerto 8582), con vistas actual y diaria, en tabla o gráfico.
+- **Panel web en la red local** (puerto 8582), con vistas actual y diaria, en tabla o gráfico. Desde 1.4.0 viene **desactivado**: actívalo en *Panel web → Activar panel web* y reinicia Homebridge. Lo necesitan también la exportación CSV y los botones de prueba de la página de ajustes. No tiene contraseña: si quieres que solo responda en el propio servidor, usa `bind: 127.0.0.1`. Las acciones de prueba solo se aceptan desde el mismo panel o desde la interfaz de Homebridge.
 - **Exportación CSV** por rango de fechas, sin límite de filas.
 - **Alertas**
   - Cubren corte de luz (y su regreso) y temperatura alta.

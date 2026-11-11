@@ -36,7 +36,11 @@
         "title": "Panel web",
         "type": "object",
         "properties": {
-          "enabled": { "title": "Activar panel web", "type": "boolean", "default": true },
+          "enabled": {
+            "title": "Activar panel web",
+            "type": "boolean", "default": false,
+            "description": "Desactivado por defecto. Sin él no hay panel, exportación CSV ni botones de prueba en esta página."
+          },
           "port": { "title": "Puerto", "type": "integer", "default": 8582, "minimum": 1024, "maximum": 65535 },
           "bind": { "title": "Escuchar en (IP)", "type": "string", "default": "0.0.0.0" },
           "allowPublic": {

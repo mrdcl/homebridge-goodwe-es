@@ -29,7 +29,7 @@ class GoodWeESPlatform {
     this.latest = undefined;
     this.latestAt = 0;
     this.history = { enabled: true, rawInterval: 60, rawRetentionDays: 180, ...this.config.history };
-    this.web = { enabled: true, port: 8582, bind: '0.0.0.0', allowPublic: false, ...this.config.web };
+    this.web = { enabled: false, port: 8582, bind: '0.0.0.0', allowPublic: false, ...this.config.web };
     this.alertCfg = { homekit: true, ...this.config.alerts };
 
     if (!this.config.host) {

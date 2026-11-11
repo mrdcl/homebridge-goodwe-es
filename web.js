@@ -26,6 +26,25 @@ function isPrivateAddress(addr = '') {
     (p[0] === 169 && p[1] === 254);
 }
 
+// Host names that can only point inside the home network: IP literals, localhost,
+// single-label names and local-only suffixes. A public DNS name (which a malicious
+// site could re-point at this server, "DNS rebinding") never matches.
+function isLocalHostname(name = '') {
+  const h = name.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '');
+  if (!h) {
+    return false;
+  }
+  if (/^[\d.]+$/.test(h) || h.includes(':')) {
+    return isPrivateAddress(h);
+  }
+  return h === 'localhost' || !h.includes('.') ||
+    /\.(local|lan|home|internal|localhost|home\.arpa|ts\.net)$/.test(h);
+}
+
+function hostnameOf(hostHeader = '') {
+  return hostHeader.replace(/:\d+$/, '').replace(/^\[|\]$/g, '');
+}
+
 function nextDay(key) {
   const [y, m, d] = key.split('-').map(Number);
   return dayKey(new Date(y, m - 1, d + 1));
@@ -108,7 +127,7 @@ class WebServer {
       return {};
     }
     try {
-      const host = (req.headers.host || '').replace(/:\d+$/, '').replace(/^\[|\]$/g, '');
+      const host = hostnameOf(req.headers.host);
       if (new URL(origin).hostname.replace(/^\[|\]$/g, '') === host) {
         return { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' };
       }
@@ -116,6 +135,25 @@ class WebServer {
       // malformed origin
     }
     return {};
+  }
+
+  // POST actions (test notification, HomeKit test) must come from a page served by
+  // this same host: the dashboard itself or the Homebridge UI on another port.
+  // Browsers always send Origin on POST, so a third-party web page the user
+  // happens to visit is rejected. Requests without Origin are non-browser
+  // clients, which the private-address check above already limits to the LAN.
+  postAllowed(req) {
+    const origin = req.headers.origin;
+    if (origin === undefined) {
+      return true;
+    }
+    try {
+      const host = hostnameOf(req.headers.host).toLowerCase();
+      const originHost = new URL(origin).hostname.replace(/^\[|\]$/g, '').toLowerCase();
+      return originHost === host && isLocalHostname(host);
+    } catch {
+      return false;
+    }
   }
 
   json(res, status, body, extra = {}) {
@@ -132,6 +170,11 @@ class WebServer {
     const q = Object.fromEntries(url.searchParams);
     const cors = this.corsHeaders(req);
     const route = `${req.method} ${url.pathname}`;
+    if (req.method === 'POST' && !this.postAllowed(req)) {
+      this.log.warn(`Web: rejected ${route} from origin ${req.headers.origin}`);
+      this.json(res, 403, { error: 'origin not allowed' });
+      return;
+    }
 
     switch (route) {
       case 'GET /':
@@ -289,4 +332,4 @@ class WebServer {
   }
 }
 
-module.exports = { WebServer, isPrivateAddress };
+module.exports = { WebServer, isPrivateAddress, isLocalHostname };
